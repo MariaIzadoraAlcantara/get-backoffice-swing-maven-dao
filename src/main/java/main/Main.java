@@ -1,4 +1,4 @@
-package app;
+package main;
 
 // importa a interface de login
 import view.LoginView;

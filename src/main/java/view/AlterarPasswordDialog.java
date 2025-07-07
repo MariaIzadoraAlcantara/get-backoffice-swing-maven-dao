@@ -1,50 +1,47 @@
 package view;
 
-// importa o controller e o serviço de cifragem
-import controller.DashboardController;
-import services.PasswordEncryptionService;
+import controller.AlterarPasswordController;
 
 import javax.swing.*;
 import java.awt.*;
 
 /**
- * Janela de diálogo (JDialog) para alterar a password
- * de um determinado utilizador
+ * Janela de diálogo para alterar a password de um utilizador existente
  */
 public class AlterarPasswordDialog extends JDialog {
 
-    // campo para introduzir a nova password
+    // Campo para a nova password
     private JPasswordField txtPassword;
 
-    // campo para confirmar a nova password
+    // Campo para confirmação da nova password
     private JPasswordField txtPasswordRepeat;
 
-    // botão para gravar a alteração
+    // Botão para gravar a nova password
     private JButton btnGravar;
 
-    // botão para cancelar a operação
+    // Botão para cancelar a alteração
     private JButton btnCancelar;
 
-    // ID do utilizador a quem vamos alterar a password
+    // ID do utilizador cuja password será alterada
     private int utilizadorId;
 
     /**
      * Construtor do diálogo
      *
-     * @param owner janela principal (DashboardView)
-     * @param utilizadorId id do utilizador selecionado
+     * @param owner Janela pai
+     * @param utilizadorId ID do utilizador
      */
     public AlterarPasswordDialog(JFrame owner, int utilizadorId) {
-        super(owner, "Alterar Password", true); // título e modal
+        super(owner, "Alterar Password", true);
         this.utilizadorId = utilizadorId;
 
         setSize(400, 220);
-        setLocationRelativeTo(owner); // centra a janela
+        setLocationRelativeTo(owner);
         inicializarComponentes();
     }
 
     /**
-     * Configura os componentes do diálogo
+     * Inicializa os componentes gráficos
      */
     private void inicializarComponentes() {
         JPanel painel = new JPanel(new GridLayout(3, 2, 10, 10));
@@ -56,48 +53,46 @@ public class AlterarPasswordDialog extends JDialog {
         btnGravar = new JButton("Gravar");
         btnCancelar = new JButton("Cancelar");
 
-        // adicionar os campos ao painel
         painel.add(new JLabel("Nova Password:"));
         painel.add(txtPassword);
+
         painel.add(new JLabel("Confirmar Password:"));
         painel.add(txtPasswordRepeat);
+
         painel.add(btnCancelar);
         painel.add(btnGravar);
 
-        // ação do botão cancelar
         btnCancelar.addActionListener(e -> dispose());
-
-        // ação do botão gravar
         btnGravar.addActionListener(e -> gravar());
 
         add(painel);
     }
 
     /**
-     * Valida e grava a nova password
+     * Valida e grava a nova password através do controller
      */
     private void gravar() {
         String pass1 = new String(txtPassword.getPassword());
         String pass2 = new String(txtPasswordRepeat.getPassword());
 
-        // verifica se preencheu ambos os campos
-        if (pass1.isEmpty() || pass2.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Preencha ambas as passwords.");
-            return;
+        AlterarPasswordController controller = new AlterarPasswordController();
+        AlterarPasswordController.ResultadoAlteracao resultado = controller.alterarPassword(utilizadorId, pass1, pass2);
+
+        switch (resultado) {
+            case CAMPOS_INCOMPLETOS:
+                JOptionPane.showMessageDialog(this, "Preencha ambas as passwords.");
+                break;
+            case PASSWORDS_DIFERENTES:
+                JOptionPane.showMessageDialog(this, "As passwords não coincidem.");
+                break;
+            case SUCESSO:
+                JOptionPane.showMessageDialog(this, "Password atualizada com sucesso.");
+                dispose();
+                break;
+            case ERRO:
+            default:
+                JOptionPane.showMessageDialog(this, "Erro ao atualizar a password.");
+                break;
         }
-
-        // confirma se são iguais
-        if (!pass1.equals(pass2)) {
-            JOptionPane.showMessageDialog(this, "As passwords não coincidem.");
-            return;
-        }
-
-        // chama o controller para atualizar a password cifrada
-        DashboardController controller = new DashboardController();
-        String hash = PasswordEncryptionService.hashPassword(pass1);
-        controller.atualizarPassword(utilizadorId, hash);
-
-        JOptionPane.showMessageDialog(this, "Password atualizada com sucesso.");
-        dispose(); // fecha o diálogo
     }
 }

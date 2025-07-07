@@ -2,7 +2,6 @@ package model;
 
 /**
  * Classe modelo que representa um utilizador do sistema
- *
  * Guarda os dados básicos de autenticação e associação de perfil
  */
 public class Utilizador {

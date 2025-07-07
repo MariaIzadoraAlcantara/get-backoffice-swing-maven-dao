@@ -1,27 +1,25 @@
 package dao;
 
-// importa o modelo Utilizador e a classe de ligação à base de dados
 import model.Utilizador;
 import utils.ConexaoDB;
 
-import javax.swing.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JOptionPane;
+
 /**
- * DAO (Data Access Object) para operações sobre a tabela 'utilizador'
- *
- * Permite efetuar todas as ações CRUD sobre os utilizadores
+ * DAO para operações sobre a tabela utilizador
  */
 public class UtilizadorDAO {
 
     /**
-     * Lista todos os utilizadores presentes na tabela
+     * Lista todos os utilizadores
      *
-     * @return lista de objetos Utilizador
+     * @return lista de utilizadores
      */
     public List<Utilizador> listarTodos() {
         List<Utilizador> lista = new ArrayList<>();
@@ -29,8 +27,6 @@ public class UtilizadorDAO {
             String sql = "SELECT * FROM utilizador";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
-
-            // percorre todos os registos e cria objetos Utilizador
             while (rs.next()) {
                 Utilizador u = new Utilizador();
                 u.setId(rs.getInt("id"));
@@ -47,10 +43,10 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Insere um novo utilizador na base de dados
+     * Insere um novo utilizador
      *
-     * @param u objeto Utilizador a inserir
-     * @return true se inseriu, false caso contrário
+     * @param u utilizador a inserir
+     * @return true se inseriu com sucesso
      */
     public boolean inserir(Utilizador u) {
         try (Connection con = ConexaoDB.getConnection()) {
@@ -63,7 +59,6 @@ public class UtilizadorDAO {
             ps.executeUpdate();
             return true;
         } catch (java.sql.SQLIntegrityConstraintViolationException ex) {
-            // tratamento para email repetido
             JOptionPane.showMessageDialog(null,
                     "O email já existe na base de dados.\nPor favor escolha outro.",
                     "Erro ao criar utilizador",
@@ -75,10 +70,10 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Verifica se um email já existe na tabela
+     * Verifica se um email já existe
      *
-     * @param email email a validar
-     * @return true se existir, false se não existir
+     * @param email email a verificar
+     * @return true se existir, false caso contrário
      */
     public boolean existeEmail(String email) {
         try (Connection con = ConexaoDB.getConnection()) {
@@ -87,7 +82,7 @@ public class UtilizadorDAO {
             ps.setString(1, email);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                return rs.getInt(1) > 0; // devolve true se contar > 0
+                return rs.getInt(1) > 0;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,9 +91,9 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Apaga um utilizador com base no seu ID
+     * Apaga um utilizador pelo ID
      *
-     * @param id identificador do utilizador
+     * @param id ID do utilizador a apagar
      */
     public void apagar(int id) {
         try (Connection con = ConexaoDB.getConnection()) {
@@ -112,9 +107,9 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Atualiza os dados de um utilizador (sem alterar a password)
+     * Atualiza os dados de um utilizador (exceto password)
      *
-     * @param u objeto Utilizador atualizado
+     * @param u utilizador com dados atualizados
      */
     public void atualizar(Utilizador u) {
         try (Connection con = ConexaoDB.getConnection()) {
@@ -131,10 +126,10 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Obtém um utilizador através do email
+     * Obtém um utilizador pelo email
      *
-     * @param email email a pesquisar
-     * @return objeto Utilizador se existir, senão null
+     * @param email email do utilizador
+     * @return objeto Utilizador ou null se não existir
      */
     public Utilizador obterPorEmail(String email) {
         Utilizador u = null;
@@ -158,10 +153,37 @@ public class UtilizadorDAO {
     }
 
     /**
-     * Atualiza apenas a password de um utilizador
+     * Obtém um utilizador pelo ID
      *
      * @param id ID do utilizador
-     * @param novaPasswordHash password já cifrada
+     * @return objeto Utilizador ou null se não existir
+     */
+    public Utilizador obterPorId(int id) {
+        Utilizador u = null;
+        try (Connection con = ConexaoDB.getConnection()) {
+            String sql = "SELECT * FROM utilizador WHERE id = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                u = new Utilizador();
+                u.setId(rs.getInt("id"));
+                u.setNome(rs.getString("nome"));
+                u.setUtilizador(rs.getString("utilizador"));
+                u.setPalavraChave(rs.getString("palavra_chave"));
+                u.setPerfilId(rs.getInt("perfil_id"));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return u;
+    }
+
+    /**
+     * Atualiza a password de um utilizador
+     *
+     * @param id ID do utilizador
+     * @param novaPasswordHash password cifrada
      */
     public void atualizarPassword(int id, String novaPasswordHash) {
         try (Connection con = ConexaoDB.getConnection()) {
@@ -175,4 +197,23 @@ public class UtilizadorDAO {
         }
     }
 
+    /**
+     * Conta quantos utilizadores têm o perfil Administrador
+     *
+     * @return número de administradores
+     */
+    public int contarAdministradores() {
+        int count = 0;
+        try (Connection con = ConexaoDB.getConnection()) {
+            String sql = "SELECT COUNT(*) FROM utilizador u INNER JOIN perfil p ON u.perfil_id = p.id WHERE p.descricao = 'Administrador'";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                count = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
 }

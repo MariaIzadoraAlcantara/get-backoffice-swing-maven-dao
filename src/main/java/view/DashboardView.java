@@ -1,6 +1,5 @@
 package view;
 
-// importa controladores e modelos necessários
 import controller.DashboardController;
 import model.Perfil;
 import model.Utilizador;
@@ -12,51 +11,35 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Classe que representa a janela principal do backoffice,
- * permitindo gerir os utilizadores (CRUD).
+ * Interface principal para gestão dos utilizadores no backoffice.
  */
 public class DashboardView extends JFrame {
 
-    // controller que gere a comunicação com os DAOs
     private DashboardController controller;
-
-    // tabela que apresenta os utilizadores
     private JTable tabelaUtilizadores;
-
-    // botões de operações
     private JButton btnCriar;
     private JButton btnEliminar;
     private JButton btnAlterarPassword;
     private JButton btnLogout;
-
-    // modelo da tabela (permite alterar os dados dinamicamente)
     private DefaultTableModel modelo;
-
-    // status em baixo para mostrar mensagens ao utilizador
     private JLabel lblStatus;
 
-    /**
-     * Construtor do dashboard
-     */
     public DashboardView() {
         controller = new DashboardController();
 
         setTitle("Dashboard - Gestão de Utilizadores");
         setSize(800, 500);
-        setLocationRelativeTo(null); // centra a janela no ecrã
+        setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         inicializarComponentes();
         carregarUtilizadores();
     }
 
-    /**
-     * Inicializa todos os componentes gráficos
-     */
     private void inicializarComponentes() {
         JPanel painel = new JPanel(new BorderLayout());
 
-        // configurar botões
+        // botões
         btnCriar = new JButton("Criar Utilizador");
         btnCriar.addActionListener(e -> abrirCriarUtilizador());
 
@@ -69,7 +52,6 @@ public class DashboardView extends JFrame {
         btnLogout = new JButton("Logout");
         btnLogout.addActionListener(e -> fazerLogout());
 
-        // painel de botões no topo
         JPanel painelBotoes = new JPanel();
         painelBotoes.add(btnCriar);
         painelBotoes.add(btnEliminar);
@@ -78,23 +60,22 @@ public class DashboardView extends JFrame {
 
         painel.add(painelBotoes, BorderLayout.NORTH);
 
-        // configurar a tabela
+        // tabela
         String[] colunas = {"ID", "Nome", "Email", "Perfil"};
         modelo = new DefaultTableModel(colunas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // apenas colunas diferentes do ID são editáveis
-                return column != 0;
+                return column != 0; // ID não editável
             }
         };
 
         tabelaUtilizadores = new JTable(modelo);
 
-        // melhorar legibilidade da tabela
+        // altura e fonte para melhor legibilidade
         tabelaUtilizadores.setRowHeight(30);
         tabelaUtilizadores.setFont(new Font("Arial", Font.PLAIN, 14));
 
-        // preencher o editor de perfil com dropdown
+        // editor dropdown para perfis
         List<Perfil> listaPerfis = controller.listarPerfis();
         String[] descricoesPerfis = listaPerfis.stream()
                 .map(Perfil::getDescricao)
@@ -107,7 +88,7 @@ public class DashboardView extends JFrame {
         JScrollPane scroll = new JScrollPane(tabelaUtilizadores);
         painel.add(scroll, BorderLayout.CENTER);
 
-        // label de status (mensagens)
+        // label para mensagens de status
         lblStatus = new JLabel(" ");
         lblStatus.setOpaque(true);
         lblStatus.setHorizontalAlignment(SwingConstants.CENTER);
@@ -117,22 +98,18 @@ public class DashboardView extends JFrame {
 
         painel.add(lblStatus, BorderLayout.SOUTH);
 
-        // adiciona listener para detectar alterações
+        // listener para detectar alterações na tabela
         modelo.addTableModelListener(e -> tratarAlteracaoTabela(e));
 
         add(painel);
     }
 
-    /**
-     * Carrega os utilizadores na tabela
-     */
     private void carregarUtilizadores() {
-        modelo.setRowCount(0); // limpa a tabela
+        modelo.setRowCount(0);
 
         List<Utilizador> lista = controller.listarUtilizadores();
 
         for (Utilizador u : lista) {
-            // obter descrição do perfil do utilizador
             Perfil perfil = controller.obterPerfilPorDescricao(
                     controller.listarPerfis().stream()
                             .filter(p -> p.getId() == u.getPerfilId())
@@ -141,7 +118,6 @@ public class DashboardView extends JFrame {
                             .orElse("")
             );
 
-            // adiciona linha à tabela
             modelo.addRow(new Object[]{
                     u.getId(),
                     u.getNome(),
@@ -151,9 +127,6 @@ public class DashboardView extends JFrame {
         }
     }
 
-    /**
-     * Trata alterações diretamente editadas na grelha
-     */
     private void tratarAlteracaoTabela(TableModelEvent e) {
         if (e.getType() == TableModelEvent.UPDATE) {
             int linha = e.getFirstRow();
@@ -171,6 +144,29 @@ public class DashboardView extends JFrame {
             u.setPerfilId(perfil != null ? perfil.getId() : 1);
 
             try {
+                // Obter estado anterior para comparação
+                Utilizador utilizadorAntigo = controller.obterUtilizadorPorId(id);
+                Perfil perfilAntigo = controller.obterPerfilPorId(utilizadorAntigo.getPerfilId());
+                int nAdmins = controller.contarAdministradores();
+
+                // Se era administrador e está a perder esse perfil e é o último administrador
+                if (perfilAntigo != null
+                        && perfilAntigo.getDescricao().equalsIgnoreCase("Administrador")
+                        && !perfil.getDescricao().equalsIgnoreCase("Administrador")
+                        && nAdmins <= 1) {
+
+                    // Impede alteração, mostra alerta e reverte a mudança na tabela
+                    JOptionPane.showMessageDialog(this,
+                            "Não pode remover o perfil de Administrador ao único administrador existente.",
+                            "Erro de validação",
+                            JOptionPane.ERROR_MESSAGE);
+
+                    // Reverter valor da tabela para o perfil antigo
+                    modelo.setValueAt(perfilAntigo.getDescricao(), linha, 3);
+                    return; // interrompe a atualização
+                }
+
+                // Atualiza no controller
                 controller.atualizarUtilizador(u);
                 lblStatus.setText("Dado atualizado na base de dados com sucesso.");
                 lblStatus.setBackground(Color.GREEN);
@@ -179,6 +175,7 @@ public class DashboardView extends JFrame {
                     lblStatus.setText(" ");
                     lblStatus.setBackground(Color.LIGHT_GRAY);
                 }).start();
+
             } catch (Exception ex) {
                 lblStatus.setText("Erro ao atualizar na base de dados!");
                 lblStatus.setBackground(Color.RED);
@@ -192,17 +189,11 @@ public class DashboardView extends JFrame {
         }
     }
 
-    /**
-     * Abre a janela para criar um novo utilizador
-     */
     private void abrirCriarUtilizador() {
         new CriarUtilizadorDialog(this).setVisible(true);
         carregarUtilizadores();
     }
 
-    /**
-     * Abre o diálogo para alterar a password do utilizador
-     */
     private void abrirAlterarPassword() {
         int linha = tabelaUtilizadores.getSelectedRow();
         if (linha >= 0) {
@@ -214,7 +205,8 @@ public class DashboardView extends JFrame {
     }
 
     /**
-     * Elimina um utilizador selecionado da tabela
+     * Método para eliminar um utilizador selecionado,
+     * verificando que não seja o último Administrador
      */
     private void eliminarUtilizador() {
         int linha = tabelaUtilizadores.getSelectedRow();
@@ -236,14 +228,13 @@ public class DashboardView extends JFrame {
                         lblStatus.setBackground(Color.LIGHT_GRAY);
                     }).start();
                 } catch (Exception ex) {
-                    lblStatus.setText("Erro ao eliminar o utilizador!");
+                    lblStatus.setText(ex.getMessage());
                     lblStatus.setBackground(Color.RED);
                     lblStatus.setForeground(Color.BLACK);
                     new javax.swing.Timer(5000, ev -> {
                         lblStatus.setText(" ");
                         lblStatus.setBackground(Color.LIGHT_GRAY);
                     }).start();
-                    ex.printStackTrace();
                 }
             }
         } else {
@@ -251,17 +242,11 @@ public class DashboardView extends JFrame {
         }
     }
 
-    /**
-     * Termina a sessão e volta ao ecrã de login
-     */
     private void fazerLogout() {
-        dispose(); // fecha o dashboard
-        new LoginView().setVisible(true); // reabre o login
+        dispose();
+        new LoginView().setVisible(true);
     }
 
-    /**
-     * Torna a janela visível
-     */
     public void mostrar() {
         setVisible(true);
     }

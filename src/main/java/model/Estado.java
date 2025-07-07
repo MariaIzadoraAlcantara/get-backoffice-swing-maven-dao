@@ -2,7 +2,6 @@ package model;
 
 /**
  * Classe modelo que representa o estado de um equipamento
- *
  * Esta classe pode ser usada para indicar, por exemplo,
  * se um equipamento está ativo, inativo, em manutenção, etc.
  */

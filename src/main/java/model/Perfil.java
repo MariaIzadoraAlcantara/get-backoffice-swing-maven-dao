@@ -2,7 +2,6 @@ package model;
 
 /**
  * Classe modelo que representa um perfil de acesso
- *
  * Permite identificar diferentes tipos de utilizadores
  * no sistema, como "Administrador", "Editor", etc.
  */
