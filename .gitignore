@@ -12,6 +12,9 @@ target/
 *.iml
 *.ipr
 
+# Arquivo de configuração do banco (segredo!)
+src/main/resources/config.properties
+
 ### Eclipse ###
 .apt_generated
 .classpath
