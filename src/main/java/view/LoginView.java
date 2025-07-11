@@ -24,10 +24,12 @@ public class LoginView extends JFrame {
      * Construtor da interface de login
      */
     public LoginView() {
-        setTitle("Backoffice - Login");
-        setSize(400, 200);
-        setLocationRelativeTo(null); // centra a janela no ecrã
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Login - JavaTech");
+        setSize(450, 450);
+        util.IconeUtil.aplicarIcone(this);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setResizable(false);
         inicializarComponentes();
     }
 
@@ -35,9 +37,31 @@ public class LoginView extends JFrame {
      * Inicializa todos os componentes do ecrã de login
      */
     private void inicializarComponentes() {
+        JPanel titulo = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JLabel tituloLabel = new JLabel("JavaTech Equipamentos");
+        tituloLabel.setFont(new Font(tituloLabel.getFont().getFontName(), Font.BOLD, 24));
+        titulo.add(tituloLabel);
+        titulo.setBackground(new Color(100, 169, 220, 255));
+        tituloLabel.setForeground(new Color(219, 47, 3));
+
+        ImageIcon logoOriginal = new ImageIcon(getClass().getResource("/assets/images/icone.png"));
+        Image imagemRedimensionada = logoOriginal.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+        ImageIcon logo = new ImageIcon(imagemRedimensionada);
+        JLabel logoLabel = new JLabel(logo);
+
         JPanel painel = new JPanel(new GridLayout(3, 2, 10, 10));
         painel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
+
+        // Painel central com imagem + formulário
+        JPanel centro = new JPanel();
+        centro.setLayout(new BoxLayout(centro, BoxLayout.Y_AXIS));
+        centro.setOpaque(false);
+        logoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        centro.add(Box.createVerticalStrut(10)); // Espaço entre título e imagem
+        centro.add(logoLabel);
+        centro.add(Box.createVerticalStrut(10)); // Espaço entre imagem e formulário
+        centro.add(painel);
         // etiqueta e campo de email
         JLabel lblEmail = new JLabel("Utilizador (Email):");
         txtEmail = new JTextField();
@@ -58,7 +82,13 @@ public class LoginView extends JFrame {
         painel.add(new JLabel()); // espaço vazio para alinhamento
         painel.add(btnLogin);
 
-        add(painel);
+        JPanel painelPrincipal = new JPanel(new BorderLayout());
+        painelPrincipal.add(titulo, BorderLayout.NORTH);
+        painelPrincipal.add(centro, BorderLayout.CENTER);
+//        painelPrincipal.add(painel, BorderLayout.CENTER);
+        painelPrincipal.setBackground(new Color(100, 169, 220, 255));
+
+        setContentPane(painelPrincipal);
     }
 
     /**
